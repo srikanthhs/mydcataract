@@ -8,7 +8,7 @@ interface ContrastTestProps {
 }
 
 const LETTERS = "HCOVNZRDKS".split("");
-const CONTRASTS = [100, 80, 60, 40, 20, 10, 5, 2, 1];
+const CONTRASTS = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10];
 
 export const ContrastTest: React.FC<ContrastTestProps> = ({ onComplete }) => {
   const [step, setStep] = useState(0);
@@ -36,7 +36,8 @@ export const ContrastTest: React.FC<ContrastTestProps> = ({ onComplete }) => {
         onComplete(100);
       }
     } else {
-      onComplete(Math.round((step / CONTRASTS.length) * 100));
+      // Calculate score based on successful steps (10% per step with 10 total)
+      onComplete(step * 10);
     }
   };
 

@@ -47,23 +47,15 @@ export default function App() {
   };
 
   const currentProgress = () => {
-    if (testMode === 'QUICK') {
-        switch (step) {
-            case 'onboarding': return 20;
-            case 'photo': return 60;
-            case 'results': return 100;
-            default: return 0;
-        }
-    }
-    switch (step) {
-      case 'onboarding': return 10;
-      case 'visual-acuity': return 30;
-      case 'contrast': return 50;
-      case 'amsler': return 70;
-      case 'photo': return 90;
-      case 'results': return 100;
-      default: return 0;
-    }
+    const steps = testMode === 'QUICK' 
+      ? ['onboarding', 'photo', 'calibration', 'results']
+      : ['onboarding', 'visual-acuity', 'contrast', 'amsler', 'photo', 'calibration', 'results'];
+    
+    const index = steps.indexOf(step);
+    if (index === -1) return 0;
+    
+    // Calculate percentage based on current index out of total steps
+    return Math.round(((index + 1) / steps.length) * 100);
   };
 
   const handleSelectPatient = (p: Patient) => {
