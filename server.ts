@@ -9,75 +9,83 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
-// API Route for Gemini Advice
+// Dedicated API for Eye Health Tips
 app.post("/api/eye-health-tips", async (req, res) => {
   const results = req.body;
-  
   try {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return res.json({ tips: "Stay hydrated and ensure regular eye checkups." });
-    }
+    if (!apiKey) return res.json({ tips: "Consult an ophthalmologist for a comprehensive eye exam." });
 
     const ai = new GoogleGenAI({ apiKey });
-    const prompt = `
-      A user just completed a home cataract screening. 
-      Results:
-      - Visual Acuity: Left Eye ${results.visualAcuity?.leftEye || 'Unknown'}, Right Eye ${results.visualAcuity?.rightEye || 'Unknown'}
-      - Contrast Sensitivity Score: ${results.contrast?.score || 'Unknown'}%
-      - Amsler Grid: ${results.amsler?.detectedDistortions ? 'Distortions detected' : 'No distortions detected'}
-      
-      Provide 2-3 brief, helpful, and reassuring eye health tips or recommendations for this user. 
-      Be professional but empathetic. Remind them to consult an eye doctor.
-      Keep it under 60 words.
-    `;
+    const prompt = `Provide 2-3 brief, helpful, and reassuring eye health tips based on these results: ${JSON.stringify(results)}. Keep it under 50 words.`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt,
     });
-
     res.json({ tips: response.text });
   } catch (error) {
-    console.error("Gemini Error:", error);
-    res.status(500).json({ tips: "Consult an ophthalmologist for a comprehensive eye exam if you notice any changes in your vision." });
+    res.status(500).json({ tips: "Stay consistent with your eye care routine." });
   }
 });
 
-async function setupVite() {
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
-  }
-}
+// Dedicated API for Diagnostic Assessment (Full AI Analysis)
+app.post("/api/diagnostic-assessment", async (req, res) => {
+  const { structuredData, imageBase64 } = req.body;
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error("Missing API Key");
 
-if (process.env.NODE_ENV !== "production") {
-  setupVite();
-} else {
+    const ai = new GoogleGenAI({ apiKey });
+    let prompt = `
+      Analyze these eye test results:
+      - Acuity: ${structuredData.visualAcuityLeft}/${structuredData.visualAcuityRight}
+      - Contrast: ${structuredData.contrastScore}%
+      - Amsler: ${structuredData.amslerResult ? 'Distortion' : 'Normal'}
+      - Opacity Grade: ${structuredData.lensOpacity || 'N/A'}
+    `;
+
+    const parts: any[] = [{ text: prompt }];
+    if (imageBase64) {
+      const cleanBase64 = imageBase64.split(',')[1] || imageBase64;
+      parts.push({ inlineData: { mimeType: "image/jpeg", data: cleanBase64 } });
+      prompt += " Inspect the provided eye image for lens clouding or visible cataracts.";
+    }
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: { parts }
+    });
+    res.json({ assessment: response.text });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ assessment: "Unable to process AI assessment. Please check connectivity." });
+  }
+});
+
+// Production Handling
+if (process.env.NODE_ENV === "production") {
   const distPath = path.join(process.cwd(), "dist");
   app.use(express.static(distPath));
   app.get("*", (req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
   });
-}
+} else {
+  // Local Dev Handling
+  const setupVite = async () => {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  };
+  setupVite();
 
-// Export for Vercel
-export default app;
-
-// Listen only if not in a serverless environment
-if (process.env.NODE_ENV !== "production") {
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }
+
+export default app;
