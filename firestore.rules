@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(data) {
+      return isSignedIn() && data.ownerId == request.auth.uid;
+    }
+
+    function isValidPatient(data) {
+      return data.name is string && data.name.size() > 0 &&
+             data.age is number && data.age >= 0 &&
+             data.externalId is string && data.externalId.size() > 0 &&
+             data.ownerId == request.auth.uid;
+    }
+
+    function isValidTestResult(data) {
+      return data.patientId is string &&
+             data.ownerId == request.auth.uid;
+    }
+
+    match /patients/{patientId} {
+      allow read: if isOwner(resource.data);
+      allow create: if isValidPatient(request.resource.data);
+      allow update: if isOwner(resource.data) && isValidPatient(request.resource.data) &&
+                      request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isOwner(resource.data);
+    }
+
+    match /testResults/{resultId} {
+      allow read: if isOwner(resource.data);
+      allow create: if isValidTestResult(request.resource.data);
+      allow update: if isOwner(resource.data) && isValidTestResult(request.resource.data) &&
+                      request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isOwner(resource.data);
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Cataract Vision Check",
+  "description": "A comprehensive at-home cataract screening tool featuring visual acuity, contrast sensitivity, and Amsler grid tests with a clean Material Design interface.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": []
+}

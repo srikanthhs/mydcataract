@@ -1,0 +1,54 @@
+{
+  "entities": {
+    "Patient": {
+      "title": "Patient",
+      "description": "Patient profile information",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "age": { "type": "integer" },
+        "phone": { "type": "string" },
+        "district": { "type": "string" },
+        "block": { "type": "string" },
+        "village": { "type": "string" },
+        "externalId": { "type": "string", "description": "Unique clinic patient ID" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "age", "district", "ownerId"]
+    },
+    "TestResult": {
+      "title": "Test Result",
+      "description": "Eye test result and AI diagnostic data",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "testType": { "type": "string", "enum": ["QUICK_SCAN", "FULL_DIAGNOSTIC"] },
+        "visualAcuityLeft": { "type": "string" },
+        "visualAcuityRight": { "type": "string" },
+        "contrastScore": { "type": "integer" },
+        "amslerResult": { "type": "boolean" },
+        "glareScore": { "type": "integer" },
+        "lensOpacity": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "aiAssessment": { "type": "string" },
+        "aiDiagnosis": { "type": "string" },
+        "referralStatus": { "type": "string" },
+        "assignedHospital": { "type": "string" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["patientId", "date", "ownerId"]
+    }
+  },
+  "firestore": {
+    "/patients/{patientId}": {
+      "schema": "Patient",
+      "description": "Collection of patients"
+    },
+    "/testResults/{resultId}": {
+      "schema": "TestResult",
+      "description": "Historical test results"
+    }
+  }
+}
